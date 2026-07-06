@@ -16,19 +16,19 @@ POBOLJSANJA U ODNOSU NA v1:
   3. Split PRE enkodiranja - sprecava data leakage kroz TargetEncoder
 """
 
+from imblearn.over_sampling import SMOTE
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import StandardScaler, TargetEncoder
+from sklearn.model_selection import train_test_split
+import joblib
+import os
+import seaborn as sns
+import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import seaborn as sns
-import os
-import joblib
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler, TargetEncoder
-from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
-from imblearn.over_sampling import SMOTE
 
 # ---------- 1. PUTANJE ----------
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -59,12 +59,15 @@ df_qual = df_qual.drop_duplicates()
 print(f"  MotoGP qualifying redova: {len(df_qual)} (2022-2025)")
 
 # Parse lap time "MM:SS.sss" → seconds
+
+
 def _parse_lap_time(t):
     t = str(t)
     if ":" not in t:
         return None
     parts = t.split(":")
     return float(parts[0]) * 60 + float(parts[1])
+
 
 df_qual["time_sec"] = df_qual["time"].apply(_parse_lap_time)
 
@@ -76,17 +79,17 @@ circuit_year = q2.groupby(["event", "year"]).apply(
     lambda g: pd.Series({
         "Quali_Spread":    g["time_sec"].max() - g["time_sec"].min(),
         "Quali_Top6_Gap":  g.nsmallest(6, "time_sec")["time_sec"].max()
-                           - g["time_sec"].min(),
+        - g["time_sec"].min(),
         "Quali_Time_Std":  g["time_sec"].std()
     })
 ).reset_index()
 
 # Medijan kroz sve dostupne godine — robustan na wet session outlier-e
 circuit_features = (circuit_year
-    .groupby("event")[["Quali_Spread", "Quali_Top6_Gap", "Quali_Time_Std"]]
-    .median().reset_index()
-    .rename(columns={"event": "shortname"})
-)
+                    .groupby("event")[["Quali_Spread", "Quali_Top6_Gap", "Quali_Time_Std"]]
+                    .median().reset_index()
+                    .rename(columns={"event": "shortname"})
+                    )
 
 # Merge na glavni dataset (left join — cuva sve redove)
 df = df.merge(circuit_features, on="shortname", how="left")
@@ -123,7 +126,8 @@ df["Historical_DNF_Rate"] = (
 rider_global = df.groupby("rider_name")["Status_Zavrsetka"].transform(
     lambda x: x.shift().expanding().mean()
 )
-df["Historical_DNF_Rate"] = df["Historical_DNF_Rate"].fillna(rider_global).fillna(0.0)
+df["Historical_DNF_Rate"] = df["Historical_DNF_Rate"].fillna(
+    rider_global).fillna(0.0)
 
 # 3b. Rider Experience (broj prethodnih trka vozaca)
 print("  3b. Rider_Experience (broj prethodnih nastupa)")
@@ -213,7 +217,8 @@ plt.close()
 # ---------- 5. PRIPREMA ZA ENKODIRANJE ----------
 print("\n--- 5. Priprema za enkodiranje ---")
 
-categorical_cols = ["shortname", "circuit_name", "rider_name", "team_name", "bike_name"]
+categorical_cols = ["shortname", "circuit_name",
+                    "rider_name", "team_name", "bike_name"]
 numerical_cols = ["year", "sequence", "Historical_DNF_Rate", "Rider_Experience",
                   "Team_DNF_Rate", "Bike_DNF_Rate", "Track_DNF_Rate", "Season_Phase",
                   "Quali_Spread", "Quali_Top6_Gap", "Quali_Time_Std"]
@@ -250,7 +255,8 @@ print("\n--- 7. TargetEncoder + StandardScaler ---")
 # ColumnTransformer: TargetEncoder za kategoricke, StandardScaler za numericke
 preprocessor = ColumnTransformer(
     transformers=[
-        ("target_enc", TargetEncoder(target_type="binary", random_state=42), categorical_cols),
+        ("target_enc", TargetEncoder(
+            target_type="binary", random_state=42), categorical_cols),
         ("scaler", StandardScaler(), numerical_cols)
     ],
     remainder="passthrough"
@@ -325,9 +331,9 @@ pd.Series(y_test.values, name="Status_Zavrsetka").to_csv(
     os.path.join(PROCESSED_DIR, "y_test.csv"), index=False)
 print("Procesirani skupovi sacuvani")
 
-# ---------- 9. SUMARNI IZVESTAJ ----------
+# ---------- 9. SUMIRANI IZVESTAJ ----------
 print("\n" + "=" * 60)
-print("SUMMARNI IZVESTAJ PREPROCESIRANJA (v2)")
+print("SUMIRANI IZVESTAJ PREPROCESIRANJA (v2)")
 print("=" * 60)
 print(f"""
 Novi feature-i:       Historical_DNF_Rate, Rider_Experience, Team_DNF_Rate,
