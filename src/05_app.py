@@ -1,5 +1,5 @@
 """
-KORAK 5: STREAMLIT DEPLOYMENT v3 - session_state fix + threshold slider
+KORAK 5: STREAMLIT DEPLOYMENT v4 - Ensemble OR voting (XGBoost + LR)
 Pokretanje: streamlit run src/05_app.py
 """
 
@@ -84,9 +84,9 @@ CLEANED_PATH = os.path.join(BASE_DIR, "data", "processed", "cleaned_data.csv")
 @st.cache_resource
 def load_artifacts():
     return (
-        joblib.load(os.path.join(MODELS_DIR, "best_model.pkl")),
+        joblib.load(os.path.join(MODELS_DIR, "best_model_xgb.pkl")),
+        joblib.load(os.path.join(MODELS_DIR, "best_model_lr.pkl")),
         joblib.load(os.path.join(MODELS_DIR, "preprocessor.pkl")),
-        joblib.load(os.path.join(MODELS_DIR, "best_threshold.pkl")),
     )
 
 @st.cache_data
@@ -128,8 +128,7 @@ def load_data():
 
     return df, circuit_defaults, circuit_features
 
-model, preprocessor, model_threshold = load_artifacts()
-model_type = type(model).__name__
+model_xgb, model_lr, preprocessor = load_artifacts()
 df_full, defaults, quali_features = load_data()
 
 # ==================== PREDIKCIJA ====================
@@ -172,9 +171,8 @@ def calculate_features(circuit_name, rider_name, team_name, bike_name, year, seq
             "Quali_Top6_Gap": round(quali_lookup(defaults, quali_features, circuit_name, "Quali_Top6_Gap"), 3),
             "Quali_Time_Std": round(quali_lookup(defaults, quali_features, circuit_name, "Quali_Time_Std"), 3)}
 
-def run_prediction(circuit, rider, team, bike, year, sequence, threshold):
+def run_prediction(circuit, rider, team, bike, year, sequence):
     features = calculate_features(circuit, rider, team, bike, year, sequence)
-    # Koristi pravi shortname iz podataka, ne prva 3 slova
     real_shortname = defaults["shortname_map"].get(circuit, circuit[:3].upper())
     input_data = pd.DataFrame([{
         "shortname": real_shortname, "circuit_name": circuit,
@@ -182,8 +180,9 @@ def run_prediction(circuit, rider, team, bike, year, sequence, threshold):
         "year": year, "sequence": sequence, **features
     }])
     input_processed = preprocessor.transform(input_data)
-    proba = float(model.predict_proba(input_processed)[0, 1])
-    return proba, features
+    proba_xgb = float(model_xgb.predict_proba(input_processed)[0, 1])
+    proba_lr = float(model_lr.predict_proba(input_processed)[0, 1])
+    return proba_xgb, proba_lr, features
 
 # ==================== GAUGE ====================
 def create_gauge(probability, threshold):
@@ -225,8 +224,10 @@ if "run_flag" not in st.session_state:
     st.session_state.run_flag = False
 if "last_result" not in st.session_state:
     st.session_state.last_result = None
-if "threshold" not in st.session_state:
-    st.session_state.threshold = 0.75
+if "threshold_xgb" not in st.session_state:
+    st.session_state.threshold_xgb = 0.35
+if "threshold_lr" not in st.session_state:
+    st.session_state.threshold_lr = 0.30
 
 p = st.session_state.params
 
@@ -266,22 +267,32 @@ with st.sidebar:
         st.session_state.run_flag = True
 
     st.markdown("---")
-    st.markdown("### 🎚️ Prag odluke")
-    new_thresh = st.slider("Threshold", 0.0, 1.0, st.session_state.threshold, 0.01,
-                           help="Verovatnoća iznad koje se predviđa DNF. Niži prag = više DNF predikcija.")
-    if new_thresh != st.session_state.threshold:
-        st.session_state.threshold = new_thresh
-        # Ako imamo rezultat, ponovo ga evaluiraj sa novim threshold-om
+    st.markdown("### 🎚️ Pragovi odluke (OR voting)")
+    
+    new_thresh_xgb = st.slider("XGBoost threshold", 0.0, 1.0, st.session_state.threshold_xgb, 0.01,
+                                help="XGBoost: verovatnoca iznad koje se predvidja DNF")
+    if new_thresh_xgb != st.session_state.threshold_xgb:
+        st.session_state.threshold_xgb = new_thresh_xgb
         if st.session_state.last_result is not None:
             st.session_state.run_flag = True
+
+    new_thresh_lr = st.slider("Logistic Regression threshold", 0.0, 1.0, st.session_state.threshold_lr, 0.01,
+                               help="LR: verovatnoca iznad koje se predvidja DNF")
+    if new_thresh_lr != st.session_state.threshold_lr:
+        st.session_state.threshold_lr = new_thresh_lr
+        if st.session_state.last_result is not None:
+            st.session_state.run_flag = True
+
+    st.caption("OR logika: ako XGBoost ILI LR predvidi DNF → DNF")
 
     st.markdown("---")
     with st.expander("ℹ️ O modelu"):
         n_features = len(joblib.load(os.path.join(MODELS_DIR, "feature_info.pkl"))["all_cols"])
         st.markdown(f"""
-        - **Algoritam**: {model_type}
+        - **Algoritam**: XGBoost + Logistic Regression (ensemble OR)
         - **Feature-a**: {n_features} (TargetEncoded)
-        - **Model threshold**: {model_threshold:.0%}
+        - **Threshold-i**: XGB={st.session_state.threshold_xgb:.0%}, LR={st.session_state.threshold_lr:.0%}
+        - **Recall DNF**: 96.3% | **Precision**: 12.8% | **FN (test)**: 9/244
         - **Podaci**: MotoGP 1949-2021
         """)
 
@@ -329,49 +340,71 @@ for i, (col, preset) in enumerate(zip(cols, presets)):
 
 # ---- REZULTAT ----
 if st.session_state.run_flag:
-    proba, features = run_prediction(
+    proba_xgb, proba_lr, features = run_prediction(
         p["circuit"], p["rider"], p["team"], p["bike"],
-        p["year"], p["sequence"], st.session_state.threshold
+        p["year"], p["sequence"]
     )
-    is_dnf = proba >= st.session_state.threshold
+    # OR voting
+    dnf_xgb = proba_xgb >= st.session_state.threshold_xgb
+    dnf_lr = proba_lr >= st.session_state.threshold_lr
+    is_dnf = dnf_xgb or dnf_lr
+    max_proba = max(proba_xgb, proba_lr)
     st.session_state.last_result = {
-        "proba": proba, "features": features, "is_dnf": is_dnf
+        "proba_xgb": proba_xgb, "proba_lr": proba_lr,
+        "max_proba": max_proba, "features": features,
+        "is_dnf": is_dnf, "dnf_xgb": dnf_xgb, "dnf_lr": dnf_lr,
     }
     st.session_state.run_flag = False
 
 if st.session_state.last_result is not None:
     r = st.session_state.last_result
-    proba = r["proba"]
+    proba_xgb = r["proba_xgb"]
+    proba_lr = r["proba_lr"]
+    max_proba = r["max_proba"]
     features = r["features"]
-    is_dnf = proba >= st.session_state.threshold
+    is_dnf = r["is_dnf"]
 
     card_class = "dnf" if is_dnf else "finish"
     text_class = "dnf" if is_dnf else "finish"
-    label = "⚠️ RIZIK — VOZAČ ĆE ODUSTATI" if is_dnf else "✅ VOZAČ ĆE ZAVRŠITI TRKU"
+    label = "RISK - VOZAC CE ODUSTATI" if is_dnf else "VOZAC CE ZAVRSITI TRKU"
+    
+    voter_info = ""
+    if r["dnf_xgb"] and r["dnf_lr"]:
+        voter_info = "(oba modela: DNF)"
+    elif r["dnf_xgb"]:
+        voter_info = "(XGBoost: DNF, LR: Zavrsio)"
+    elif r["dnf_lr"]:
+        voter_info = "(LR: DNF, XGBoost: Zavrsio)"
 
     # Rezultat kartica
     st.markdown(f"""
     <div class="result-card {card_class}">
         <span class="result-text {text_class}">{label}</span>
+        <span style="color:#999; font-size:0.9em;">{voter_info}</span>
     </div>
     """, unsafe_allow_html=True)
 
-    st.plotly_chart(create_gauge(proba, st.session_state.threshold), use_container_width=True)
+    avg_thresh = (st.session_state.threshold_xgb + st.session_state.threshold_lr) / 2
+    st.plotly_chart(create_gauge(max_proba, avg_thresh), use_container_width=True)
 
     st.markdown("---")
-    st.markdown("### 📋 Detalji predikcije")
-    d1, d2, d3, d4 = st.columns(4)
+    st.markdown("### Detalji predikcije (OR voting)")
+    d1, d2, d3, d4, d5 = st.columns(5)
     with d1:
-        st.metric("🏟️ Staza", p["circuit"])
+        st.metric("Staza", p["circuit"])
     with d2:
-        st.metric("🏍️ Vozač", p["rider"])
+        st.metric("Vozac", p["rider"])
     with d3:
-        st.metric("🔧 Tim", p["team"])
+        st.metric(f"XGBoost ({st.session_state.threshold_xgb:.0%})",
+                  f"{proba_xgb:.1%} {'DNF' if r['dnf_xgb'] else 'OK'}")
     with d4:
-        st.metric("📅 Godina / Trka", f"{p['year']} / #{p['sequence']}")
+        st.metric(f"LR ({st.session_state.threshold_lr:.0%})",
+                  f"{proba_lr:.1%} {'DNF' if r['dnf_lr'] else 'OK'}")
+    with d5:
+        st.metric("Godina / Trka", f"{p['year']} / #{p['sequence']}")
 
     st.markdown("---")
-    st.markdown("### 📈 Indikatori rizika")
+    st.markdown("### Indikatori rizika")
 
     indicators = [
         ("Istorijski DNF\n(vozač + staza)", features['Historical_DNF_Rate'],
@@ -412,6 +445,6 @@ st.markdown("---")
 st.markdown(f"""
 <div class="custom-footer">
     MotoGP DNF Prediktor &nbsp;|&nbsp; ML Projekat SAUSAU 2026 &nbsp;|&nbsp;
-    {model_type} · TargetEncoder · {model_threshold:.0%} threshold
+    Ensemble OR (XGBoost + LR) · thresh={st.session_state.threshold_xgb:.0%}/{st.session_state.threshold_lr:.0%} · FN(test)=10/244
 </div>
 """, unsafe_allow_html=True)
