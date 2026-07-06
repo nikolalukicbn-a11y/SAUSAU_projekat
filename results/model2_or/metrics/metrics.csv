@@ -1,0 +1,2 @@
+Model,XGB_Threshold,LR_Threshold,TN,FP,FN,TP,Accuracy,Precision,Recall,F1-Score
+OR Ensemble Calibrated (Platt scaling),0.35,0.3,398,1600,9,235,0.2823371989295272,0.12806539509536785,0.9631147540983607,0.22607022607022606
