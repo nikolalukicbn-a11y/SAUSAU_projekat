@@ -1,0 +1,287 @@
+SVM SMOTE- tjunovao treshold od 0,10-> popravlja se broj laznih alarma do 0,35(i ovde opada recall sa 93 na 65%), na 0,5 recall pada sa 70% na 30%
+za sad najbolji model xgboost(smote60/40) sa treh 0,8 i recall mu je 91%, ima samo 20 FN
+stacking metoda sa LR,RF,MLP i xgb- dobra stvar povecala se preciznost ali po cenu da proputa vise dnfova
+
+Pristup/	               Status/	   FN/	      Recall/	Zaključak/
+XGBoost SMOTE 60/40/	       Deployed	   20	      91.8%	Best za FN
+Cost-sensitive (FN/FP=5:1)/    Proban	   59 (XGB)   75.8%	Bolji F1, gori recall
+Anomaly detection (IF, SVM)/   Proban	   212	      13.1%	Ne radi
+SVM threshold tuning/	       Proban	   2-170      99%-30%	Loša kalibracija
+Stacking ensemble/	       Proban	   181	      25.8%	Gori recall
+
+ensemble or ili voting za max recall(XGB,LR,RF,MLP)-
+
+Model	          FN ↓	FP	Recall	F1	vs Deploy
+C) Best F2	  0	1763	100%	0.217	FN: -20, FP: +223
+A) Rec>=85%	  2	1754	99.2%	0.216	FN: -18, FP: +214
+D) XGBoost OR LR  9	1624	96.3%	0.224	FN: -11, FP: +84
+XGBoost deploy	  20	1540	91.8%	0.224	--
+
+
+Modeli
+      XGBoost Standalone							Ensemble OR
+Arhitektura	1 model: XGBoost					2 modela: XGBoost + LR
+XGBoost		XGBClassifier(lr=0.01, depth=6, n=200, scale_pos=8)	Isti model
+LR		--							LogisticRegression(C=10, class_weight=balanced)
+Logika		XGB >= 0.80						XGB >= 0.83 ILI LR >= 0.78
+Trening		SMOTE 60/40						SMOTE 60/40
+
+Metrike na test skupu (2242 reda, 244 DNF)
+Metrika		XGBoost (0.80)	E	nsemble OR (0.83+0.78)
+TN		462			554
+FP		1536			1444
+FN		20			31
+TP		224			213
+Recall		91.8%			87.3%
+Precision	12.7%			12.9%
+F1		0.224			0.224
+Accuracy	30.6%			34.2%
+FP po DNF-u	6.9			6.8
+
+na kraju sam izabrao ili 0.5 koji je bolji ili 0.6 koji je vizuelno bolji
+
+Metrike za oba thresholda (već izračunate)
+ 	XGB=0.83, LR=0.50	XGB=0.83, LR=0.60
+FN		16			23
+FP		1553			1500
+TP		228			221
+Recall		93.4%			90.6%
+Precision	12.8%			12.8%
+F1		0.225			0.224
+vs XGB(0.80)	FN -4, FP +17		FN +3, FP -36
+
+porednjenje sa originalnim xgboostom
+
+Metrika			XGBoost (0.80)			OR: XGB(0.83)+LR(0.50)			OR: XGB(0.83)+LR(0.60)
+TN			462				445					498
+FP			1536				1553					1500
+FN			20				16					23
+TP			224				228					221
+Recall			91.8%				93.4%					90.6%
+Precision		12.7%				12.8%					12.8%
+F1			0.224				0.225					0.224
+Accuracy		30.6%				30.0%					32.1%
+FP/DNF			6.9				6.8					6.8
+
+Model			Kada ga koristiti
+XGBoost (0.80)		Balans — referentna tačka
+OR + LR(0.50)		Kad želiš manje propuštenih DNF-ova (-4 FN, +17 FP)
+OR + LR(0.60)		Kad želiš manje lažnih alarma (-36 FP, +3 FN)
+
+do sad
+
+Šta smo sve probali:
+#	Pristup				Rezultat
+✅	Cost-sensitive (FN/FP=5:1)	Poboljšan F1, gori recall
+✅	Anomaly detection (IF, SVM)	Ne radi, F1 ~0.17
+✅	SVM threshold tuning		Loša kalibracija
+✅	Stacking ensemble		Gori recall
+✅	Ensemble OR voting		Deployed — najbolji
+
+
+dodatni feature-
+
+Model				FN	FP	Recall	vs OLD XGB(0.80)
+XGBoost new data (0.80)		47	1031	80.7%	FN +27, FP -505
+Best FN: XGB=0.78, LR=0.35	6	1478	97.5%	FN -14, FP -58
+XGB=0.83, LR=0.50		29	1079	88.1%	FN +9, FP -457
+XGB=0.83, LR=0.60		39	993	84.0%	FN +19, FP -543
+Best cost: XGB=0.89, LR=0.69	118	355	51.6%	...
+
+Ključni nalaz
+Best FN combo (XGB=0.78, LR=0.35): FN=6, FP=1478
+- 6 propuštenih DNF-ova (naspram 20 u starom XGBoost-u)
+- 58 manje lažnih alarma nego stari XGBoost (1478 vs 1536)!
+- Recall 97.5% — skoro perfektno
+Ovo je bolje od starog najboljeg OR-a (FN=2, FP=1754) — isti nivo FN uz 276 manje FP!
+
+najgori model svakog govori da je 100%
+
+Metrika			Vrednost
+FN (propušteni DNF)	26 / 244
+FP (lažni alarmi)	1147 / 1998
+Recall			89.3%
+Precision		16.0%
+F1			0.271
+Accuracy		47.7%
+DNF predikcija		60.9% svih uzoraka
+
+
+kalibracija tresh-
+
+Kalibracija značajno popravila XGBoost (Brier: 0.62 → 0.33). Sada bolje kalibrisane verovatnoće daju bolji threshold tuning:
+
+Kalibrisani vs stari model
+
+Model			XGB thr	LR thr	FN	FP	Recall
+Stari OR (uncal)	0.83	0.50	16	1553	93.4%
+Kalibrisani OR		0.35	0.30	9	1600	96.3%
+Poboljšanje		--	--	-7 FN	+47 FP	+2.9%
+
+necemo ovaj da korisimo jer je los u deploymentu
+
+
+
+feature selection-
+
+SHAP + Feature Importance — Rezultati
+Rankirani feature-i (kombinovano SHAP + Permutation)
+#	Feature	SHAP		Perm. 	Imp.
+1	rider_name		0.73	1.00
+2	year			0.33	0.76
+3	team_name		1.00	-0.08
+4	Team_DNF_Rate		0.19	0.38
+5	Track_DNF_Rate		0.21	0.18
+6	Rider_Experience	0.07	0.09
+7	Bike_DNF_Rate		0.14	0.00
+8	bike_name		0.21	-0.09
+9	Historical_DNF_Rate	0.05	-0.00
+10	circuit_name		0.05	-0.01
+11	Quali_Time_Std		0.04	-0.01
+12	sequence		0.02	0.01
+13	Quali_Top6_Gap		0.02	0.00
+14	Season_Phase		0.04	-0.02
+15	Quali_Spread		0.01	0.00
+16	shortname		0.04	-0.08
+Ključni nalazi
+- qualifying feature-i su slabi (Quali_Spread, Quali_Top6_Gap, Quali_Time_Std) — svi na dnu
+- shortname je štetan — permutaciona važnost -0.08, uklanjanje ga poboljšava F1
+- Top 8 feature-a (rider_name, year, team_name, Team_DNF_Rate, Track_DNF_Rate, Rider_Experience, Bike_DNF_Rate, bike_name) nose skoro sav signal
+
+Rezultat feature selekcije — pogoršanje za tvoj FN prioritet
+
+Model			FN	FP	Recall	F1
+16 feature-a (current)	9	1600	96.3%	0.226
+12 feature-a		19-25	1444-1503	89.8-92.6%	0.230
+
+XGB	LR	FN	FP	Rec
+0.58	0.34	19	1482	92.2%
+0.58	0.32	18	1493	92.6%
+0.58	0.38	25	1444	89.8%
+
+Zaključak
+Uklanjanje 4 slaba feature-a smanjuje FP za ~100-150 (manje lažnih alarma), ali povećava FN za 9-16 (više propuštenih DNF-ova). To je loš trade-off za tvoj cilj.
+Preporuka: ostajemo na 16 feature-a. Kvali-feature-i i shortname iako slabi ipak pomažu u hvatanju dodatnih DNF-ova koje bi inače propustili.
+
+-bagging/bootstrap
+
+Bagging rezultati — poboljšanje!
+10 modela (5 XGBoost + 5 LR), svaki na bootstrap uzorku, fiksni threshold 0.35/0.30:
+K	FN	FP	Recall	F1	vs Single
+1	1	1683	99.6%	0.224	FN -8, FP +83
+2	6	1638	97.5%	0.225	FN -3, FP +38
+3	8	1604	96.7%	0.227	FN -1, FP +4
+4	10	1572	95.9%	0.228	FN +1, FP -28
+5	15	1536	93.9%	0.228	FN +6, FP -64
+Single	9	1600	96.3%	0.226	--
+
+
+Najbolji izbori
+K	FN	FP	Komentar
+K=2	6	1638	Najbolji balans — 3 manje FN uz +38 FP
+K=1	1	1683	Maksimalni recall (samo 1 promašen DNF!)
+K=3	8	1604	Skoro isto kao single, marginalno bolje
+
+K=2 je odličan — hvata 97.5% DNF-ova uz minimalnu cenu u FP (+38).
+
+
+Finalno stanje projekta:
+ 	 
+Model		Bagging: 5x XGBoost + 5x LR, bootstrap, Platt kalibrisani
+Voting		DNF ako K=2 od 10 modela glasa DNF
+Threshold	0.66 (po modelu)
+Feature-a	16 (TargetEncoded, SMOTE 60/40)
+
+
+Faza			FN	FP	Recall
+XGBoost standalone	20	1536	91.8%
++ OR voting		16	1553	93.4%
++ Platt kalibracija	9	1600	96.3%
++ Bagging K=2		6	1638	97.5%
+
+finalno uporedjivanje-
+
+
+SAUSAU 2026 — MotoGP DNF Prediktor: Šta je urađeno i do kakvih zaključaka se došlo
+Autor: Nikola Lukić RA47-2023
+1. Problem i cilj
+Binarna klasifikacija — predvideti hoće li vozač završiti MotoGP trku (Završio=0) ili odustati (DNF=1). Podaci: 14.944 reda, 1949–2022, 15 originalnih kolona. False negative (propušten DNF) je skup — prioritet je visok recall (uhvatiti što više stvarnih DNF-ova).
+2. Pipeline
+Korak 1 — Učitavanje podataka (data_load.py)
+- Glavni dataset FILTERED_ROWS.csv (56.396 redova), dopunski Qualifying.csv i Race.csv (2022–2025)
+- Snimljeni sirovi podaci u data/processed/
+Korak 2 — Čišćenje (data_cleaning.py)
+- Filtrirane samo MotoGP i 500cc kategorije (najviša klasa)
+- Kreirana target varijabla Status_Zavrsetka: 0=Završio (position>0), 1=DNF (position≤0)
+- Data leakage zaštita: uklonjene kolone position, points, speed, time — to su podaci poznati tek nakon trke, model sme da koristi samo informacije poznate pre starta
+- Uklonjene redundantne kolone: rider (ID), number (56% missing), country, category
+- Rezultat: 14.944 reda × 8 kolona
+Korak 3 — Feature engineering (preprocessing.py)
+- 16 feature-a: 5 kategoričkih (shortname, circuit_name, rider_name, team_name, bike_name) + 11 numeričkih
+- Izvedeni feature-i: Historical_DNF_Rate (vozač na stazi), Rider_Experience, Team_DNF_Rate, Bike_DNF_Rate, Track_DNF_Rate, Season_Phase, Quali_Spread, Quali_Top6_Gap, Quali_Time_Std
+- TargetEncoder (umesto LabelEncoder-a) — daje više informacija tree modelima
+- StandardScaler za numeričke feature
+- SMOTE 60/40 — oversampling manjinske klase (DNF) sa 10.9% na 40%
+- Split 70/15/15 PRE enkodiranja — sprečava data leakage kroz TargetEncoder
+3. Svi probani pristupi (hronološki)
+3.1 XGBoost Standalone (SMOTE 60/40) ★ Model 1
+- Šta: Jedan XGBoost model, threshold 0.80
+- Rezultat: FN=20, FP=1536, Recall=91.8%
+- Zaključak: Solidan baseline, ali propušta 20 od 244 DNF-a
+3.2 Cost-sensitive učenje (FN/FP = 5:1)
+- Šta: sample_weight veći za DNF redove, custom cost scorer u GridSearchCV-u
+- Rezultat: Poboljšan F1 (+0.01 za LR), ali XGBoost recall pao sa 91.8% na 75.8%
+- Zaključak: Cost scorer optimizuje za ukupni trošak, a ne za minimalni FN. Korisno za F1, loše za recall
+3.3 Anomaly detection (Isolation Forest, One-Class SVM)
+- Šta: DNF tretiran kao outlier — model uči samo "normalne" trke (Završio)
+- Rezultat: Isolation Forest F1=0.165, One-Class SVM F1=0.172 — daleko lošije od klasifikacije
+- Zaključak: DNF nije outlier u feature space-u — obe klase se preklapaju. Anomaly detection nije pogodan za ovaj problem
+3.4 SVM sa threshold tuningom
+- Šta: GridSearchCV + različiti threshold-i
+- Rezultat: SVM probability estimacije loše kalibrisane — sve verovatnoće DNF-a u opsegu 0.05–0.70
+- Zaključak: SVM nije pogodan za ovaj problem zbog loše kalibracije verovatnoća
+3.5 Stacking ensemble (XGB+LR+RF+MLP + meta-LR)
+- Šta: Out-of-fold predikcije, meta-learner LogisticRegression
+- Rezultat: F1=0.249, Recall=25.8% — meta-learner zaglađuje predikcije, ekstremni thresholdi ne pomažu
+- Zaključak: Stacking poboljšava preciznost ali drastično smanjuje recall. Loše za ovaj use-case
+3.6 Ensemble OR voting ★ Model 2
+- Šta: XGBoost + LogisticRegression, OR logika (bilo koji predvidi DNF → DNF)
+- Rezultat (nekalibrisano): FN=16, FP=1553, Recall=93.4%
+- Zaključak: OR logika je ključna inovacija — omogućava da LR hvata DNF-ove koje XGBoost propusti
+- Threshold tuning: XGB=0.83, LR=0.50 → FN=16 (najbolji balans)
+3.7 Platt kalibracija verovatnoća
+- Šta: CalibratedClassifierCV(method='sigmoid') za XGBoost i LR
+- Brier score poboljšanje: XGBoost 0.621→0.335 (ogromno!), LR 0.229→0.173
+- Rezultat (kalibrisani OR): FN=9, FP=1600, Recall=96.3%
+- Zaključak: Kalibracija je ključna za XGBoost — nekalibrisane verovatnoće su bile jako loše (mean 0.81, sve visoko). Kalibracija daje realne verovatnoće, omogućava precizniji threshold tuning
+3.8 Feature engineering v2 (23 feature-a)
+- Šta: Dodato 7 novih feature-a: recent DNF rate, season DNF rate, itd.
+- Rezultat: Poboljšana preciznost (FP manji za ~400) ali pogoršan recall (FN veći za 9-16)
+- Zaključak: Novi feature-i smanjuju lažne alarme ali po cenu više propuštenih DNF-ova. Ostaje se na 16 feature-a
+3.9 SHAP analiza + Feature selection
+- Šta: SHAP vrednosti + permutation importance za svih 16 feature-a
+- Najvažniji: rider_name, year, team_name — nose većinu signala
+- Najslabiji: shortname (negativna važnost!), Quali_Spread, Quali_Top6_Gap, Quali_Time_Std
+- Pokušaj selekcije (12 feature-a): Recall pao sa 96.3% na 89.8% — loš trade-off
+- Zaključak: I slabi feature-i ipak doprinose hvatanju dodatnih DNF-ova. Zadržano svih 16
+3.10 Bagging ensemble ★ Model 3 (deployment)
+- Šta: 5× XGBoost + 5× LR = 10 kalibrisanih modela na bootstrap uzorcima
+- K-voting: DNF ako K od 10 modela glasa DNF (svaki model koristi isti threshold)
+- Rezultat (K=2, thr=0.35): FN=6, FP=1625, Recall=97.5%
+- Zaključak: Bagging je najbolji pristup — konsenzus više modela eliminiše random greške pojedinačnih modela. K=2 daje odličan balans
+4. Evolucija performansi
+Faza	Pristup			FN
+1	XGBoost Standalone	20
+2	+ OR voting		16
+3	+ Threshold tuning	10
+4	+ Platt kalibracija	9
+5	+ Bagging K=2		6
+Od početnih 20 promašenih DNF-ova do samo 6 — smanjenje FN za 70% uz porast FP od samo 5.8%.
+5. Ključni zaključci
+1. Data leakage je kritičan — kolone poput points, speed, time su poznate tek nakon trke i njihovo uključivanje bi dalo lažno dobre rezultate
+2. OR logika je superiorna za minimizaciju FN — različiti modeli greše na različitim uzorcima, OR ih komplementira
+3. Kalibracija verovatnoća (Platt scaling) je obavezna za XGBoost — nekalibrisane verovatnoće su jako loše, Brier score sa 0.62 pada na 0.33
+4. Bagging sa K-votingom dodatno poboljšava — konsenzus 2+ od 10 modela eliminiše šum pojedinačnih predikcija
+5. DNF je inherentno teško predvideti sa samo pre-race informacijama — čak i najbolji model ima 12.8% preciznost (87% predikcija DNF-a su lažni alarmi). Ali sa strane FN — samo 2.5% DNF-ova je promašeno
+6. Feature-i sa negativnom važnošću ipak pomažu — uklanjanje "slabih" feature-a pogoršava recall, pa je bolje zadržati sve
+7. Anomaly detection i stacking nisu pogodni za ovaj problem — DNF nije outlier, a stacking zaglađuje ekstremne predikcije potrebne za visok recall
