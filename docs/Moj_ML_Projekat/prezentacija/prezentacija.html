@@ -1,0 +1,947 @@
+<!doctype html>
+<html lang="sr">
+
+<head>
+  <meta charset="utf-8">
+  <title>MotoGP Prediction - ML Project</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Barlow:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap"
+    rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #050505;
+      color: #E6EDF3;
+      font-family: 'Barlow', sans-serif;
+    }
+
+    .slide-container {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: #0A0A0C;
+      margin-bottom: 40px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+    }
+
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+
+    .cond {
+      font-family: 'Barlow Condensed', sans-serif;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- 01 COVER SLAJD -->
+  <div class="slide-container" data-screen-label="01 Cover">
+    <div data-object="true" data-object-type="image"
+      style="position:absolute; left:0; top:0; width:1920px; height:1080px; z-index:1;">
+      <img src="../assets/hero_cornering.jpg"
+        style="width:100%; height:100%; object-fit:cover; object-position:center 35%; filter:saturate(1.05) contrast(1.05);">
+    </div>
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:0; top:0; width:1920px; height:1080px; z-index:2; background:linear-gradient(90deg, rgba(10,10,12,0.92) 0%, rgba(10,10,12,0.72) 45%, rgba(10,10,12,0.35) 75%, rgba(10,10,12,0.75) 100%);">
+    </div>
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:120px; top:180px; width:6px; height:640px; z-index:5; background:#E30613;"></div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:80px; width:900px; height:40px; z-index:10; color:#FFFFFF;"
+      class="mono">
+      <span style="color:#E30613;">●</span>&nbsp;&nbsp;RAF · MAŠINSKO UČENJE · 2025/26
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:160px; top:210px; width:900px; height:36px; z-index:10; color:#FFD400;"
+      class="mono">
+      BINARNA KLASIFIKACIJA · SUPERVIZED LEARNING
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:160px; top:260px; width:1400px; z-index:10; color:#FFFFFF; font-family:'Barlow Condensed', sans-serif; font-weight:900; font-size:150px; line-height:0.92; letter-spacing:-0.01em; text-transform:uppercase;">
+      Predviđanje<br>ishoda trke<br><span style="color:#E30613;">u MotoGP</span>
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:160px; top:790px; width:1200px; height:60px; z-index:10; color:#E6EDF3; font-family:'Barlow', sans-serif; font-weight:400; font-size:28px; line-height:1.35;">
+      Finish ili DNF? — mašinsko učenje kao prediktor ishoda trkačkog vikenda.
+    </div>
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:160px; top:920px; width:400px; height:1px; z-index:5; background:#E30613;"></div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:160px; top:940px; width:800px; height:80px; z-index:10; color:#FFFFFF;">
+      <div style="font-family:'Barlow Condensed', sans-serif; font-weight:700; font-size:32px; letter-spacing:0.02em;">
+        NIKOLA LUKIĆ</div>
+      <div
+        style="font-family:'JetBrains Mono', monospace; font-size:16px; color:#8B949E; letter-spacing:0.14em; margin-top:4px;">
+        RA47/2023 · SPECIFIKACIJA PROJEKTA</div>
+    </div>
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:1560px; top:820px; width:240px; height:200px; z-index:6; background:rgba(227,6,19,0.08); border:1px solid #E30613;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:1580px; top:840px; width:200px; height:180px; z-index:10; color:#FFFFFF;">
+      <div
+        style="font-family:'JetBrains Mono', monospace; font-size:13px; color:#E30613; letter-spacing:0.2em; text-transform:uppercase;">
+        TARGET</div>
+      <div
+        style="font-family:'Barlow Condensed', sans-serif; font-weight:900; font-size:120px; line-height:1; margin-top:8px;">
+        0<span style="color:#E30613;">/</span>1</div>
+      <div style="font-family:'Barlow', sans-serif; font-size:14px; color:#8B949E; margin-top:2px;">Finish · DNF</div>
+    </div>
+  </div>
+
+  <!-- 02 AGENDA SLAJD -->
+  <div class="slide-container" data-screen-label="02 Agenda">
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:0; top:0; width:720px; height:1080px; z-index:1; background:#E30613;"></div>
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:680px; top:0; width:80px; height:1080px; z-index:2; background:#0A0A0C; clip-path:polygon(100% 0, 100% 100%, 0 100%);">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:100px; top:120px; width:500px; height:40px; z-index:10; color:#FFFFFF; opacity:0.85;"
+      class="mono">02 · AGENDA</div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:100px; top:190px; width:560px; height:400px; z-index:10; color:#FFFFFF;"
+      class="cond">
+      <span style="font-size:130px; font-weight:900; line-height:0.92;">Šta<br>ćemo<br>videti</span>
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:100px; top:640px; width:520px; height:220px; z-index:10; color:#FFFFFF; font-size:22px; line-height:1.55; opacity:0.92;">
+      Krećemo od <b>samog sporta</b>, jer bez razumevanja MotoGP-a nema smisla ni predikcija. Zatim otvaramo <b>ML
+        implementaciju</b> — problem, podatke, modele i evaluaciju.
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:100px; top:960px; width:520px; height:40px; z-index:10; color:#FFFFFF; opacity:0.75;"
+      class="mono">~10 MIN · 3 CELINE · 16 SLAJDOVA</div>
+
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:820px; top:120px; width:200px; height:36px; z-index:10; color:#FFD400;"
+      class="mono">● DEO I</div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:820px; top:155px; width:900px; height:60px; z-index:10; color:#FFFFFF;"
+      class="cond"><span style="font-size:52px; font-weight:800; line-height:1;">Kontekst — svet MotoGP-a</span></div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:820px; top:240px; width:1000px; height:280px; z-index:10; color:#E6EDF3; font-size:22px; line-height:1.75;">
+      <div style="display:flex; align-items:baseline; gap:16px; margin-bottom:6px;"><span class="mono"
+          style="color:#8B949E; font-size:15px; min-width:36px;">03</span><span>Šta je MotoGP šampionat</span></div>
+      <div style="display:flex; align-items:baseline; gap:16px; margin-bottom:6px;"><span class="mono"
+          style="color:#8B949E; font-size:15px; min-width:36px;">04</span><span>Kako izgleda trkački vikend</span></div>
+      <div style="display:flex; align-items:baseline; gap:16px; margin-bottom:6px;"><span class="mono"
+          style="color:#8B949E; font-size:15px; min-width:36px;">05</span><span>Ključni pojam — DNF (<i>Did Not
+            Finish</i>)</span></div>
+      <div style="display:flex; align-items:baseline; gap:16px; margin-bottom:6px;"><span class="mono"
+          style="color:#8B949E; font-size:15px; min-width:36px;">06</span><span>Zašto je predviđanje ishoda težak
+          problem</span></div>
+    </div>
+
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:820px; top:560px; width:1000px; height:1px; z-index:5; background:#262C36;"></div>
+
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:820px; top:600px; width:300px; height:36px; z-index:10; color:#58A6FF;"
+      class="mono">● DEO II</div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:820px; top:635px; width:900px; height:60px; z-index:10; color:#FFFFFF;"
+      class="cond"><span style="font-size:52px; font-weight:800; line-height:1;">Implementacija — ML pristup</span>
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:820px; top:720px; width:1000px; height:340px; z-index:10; color:#E6EDF3; font-size:22px; line-height:1.65;">
+      <div style="display:flex; align-items:baseline; gap:16px; margin-bottom:4px;"><span class="mono"
+          style="color:#8B949E; font-size:15px; min-width:36px;">08</span><span>Formulacija problema kao binarne
+          klasifikacije</span></div>
+      <div style="display:flex; align-items:baseline; gap:16px; margin-bottom:4px;"><span class="mono"
+          style="color:#8B949E; font-size:15px; min-width:36px;">09–11</span><span>Dataset, atributi i feature
+          engineering</span></div>
+      <div style="display:flex; align-items:baseline; gap:16px; margin-bottom:4px;"><span class="mono"
+          style="color:#8B949E; font-size:15px; min-width:36px;">12–13</span><span>ML pipeline i poređenje
+          algoritama</span></div>
+      <div style="display:flex; align-items:baseline; gap:16px; margin-bottom:4px;"><span class="mono"
+          style="color:#8B949E; font-size:15px; min-width:36px;">14–15</span><span>Neuravnoteženost klasa i evaluacione
+          metrike</span></div>
+      <div style="display:flex; align-items:baseline; gap:16px; margin-bottom:4px;"><span class="mono"
+          style="color:#8B949E; font-size:15px; min-width:36px;">16</span><span>Očekivani izlazi i zaključak</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 03 ŠTA JE MOTOGP -->
+  <div class="slide-container" data-screen-label="03 Sta je MotoGP">
+    <div data-object="true" data-object-type="image"
+      style="position:absolute; left:1000px; top:0; width:920px; height:1080px; z-index:1;">
+      <img src="../assets/lean-angle.jpg" style="width:100%; height:100%; object-fit:cover; object-position:center;">
+    </div>
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:1000px; top:0; width:920px; height:1080px; z-index:2; background:linear-gradient(90deg, rgba(10,10,12,0.85) 0%, rgba(10,10,12,0.15) 45%, rgba(10,10,12,0.0) 100%);">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:80px; width:400px; height:36px; z-index:10; color:#E30613;"
+      class="mono">03 · KONTEKST</div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:140px; width:900px; height:240px; z-index:10; color:#FFFFFF;"
+      class="cond">
+      <span style="font-size:120px; font-weight:900; line-height:0.95;">Šta je<br><span
+          style="color:#E30613;">MotoGP?</span></span>
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:400px; width:820px; height:150px; z-index:10; color:#E6EDF3; font-size:26px; line-height:1.45;">
+      <b style="color:#FFFFFF;">Najviši rang motociklističkog šampionata sveta.</b> Prototipski motocikli, koji ne
+      postoje u slobodnoj prodaji, voze se na najbržim stazama brzinama <b style="color:#FFD400;">preko 350 km/h</b>.
+    </div>
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:120px; top:590px; width:820px; height:1px; z-index:5; background:#E30613;"></div>
+
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:620px; width:260px; height:180px; z-index:10; color:#FFFFFF;">
+      <div class="mono" style="font-size:13px; color:#8B949E;">Trka po sezoni</div>
+      <div class="cond" style="font-size:110px; font-weight:900; line-height:1; margin-top:8px;">~20</div>
+      <div style="font-size:16px; color:#8B949E; margin-top:4px;">Grand Prix vikenda po sezoni</div>
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:410px; top:620px; width:260px; height:180px; z-index:10; color:#FFFFFF;">
+      <div class="mono" style="font-size:13px; color:#8B949E;">Vozača na gridu</div>
+      <div class="cond" style="font-size:110px; font-weight:900; line-height:1; margin-top:8px;">22</div>
+      <div style="font-size:16px; color:#8B949E; margin-top:4px;">Iz ~11 timova i 5 konstruktora</div>
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:700px; top:620px; width:260px; height:180px; z-index:10; color:#FFFFFF;">
+      <div class="mono" style="font-size:13px; color:#8B949E;">Ugao naginjanja</div>
+      <div class="cond" style="font-size:110px; font-weight:900; line-height:1; margin-top:8px;">64°</div>
+      <div style="font-size:16px; color:#8B949E; margin-top:4px;">Koleno i lakat u krivini dodiruju asfalt</div>
+    </div>
+
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:120px; top:870px; width:820px; height:120px; z-index:5; background:rgba(227,6,19,0.08); border-left:4px solid #E30613;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:150px; top:890px; width:770px; height:100px; z-index:10; color:#FFFFFF; font-size:22px; line-height:1.4;">
+      <div class="mono" style="font-size:13px; color:#E30613; margin-bottom:8px;">POENTA</div>
+      Sport je izuzetno kompleksan — <b>vozač, motocikl, tim, staza i vremenski uslovi</b> zajedno direktno kroje
+      konačan ishod.
+    </div>
+  </div>
+
+  <!-- 04 TRKAČKI VIKEND -->
+  <div class="slide-container" data-screen-label="04 Trkacki vikend">
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:80px; width:600px; height:36px; z-index:10; color:#E30613;"
+      class="mono">04 · TRKAČKI VIKEND</div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:130px; width:1400px; height:180px; z-index:10; color:#FFFFFF;"
+      class="cond">
+      <span style="font-size:100px; font-weight:900; line-height:0.95;">Kako izgleda <span style="color:#E30613;">jedan
+          GP vikend</span></span>
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:290px; width:1300px; height:60px; z-index:10; color:#8B949E; font-size:22px; line-height:1.4;">
+      Vikend traje <b>3 dana</b>. Struktura je uvek ista — svaka faza generiše strukturisane podatke koje ugrađujemo u
+      model.
+    </div>
+
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:170px; top:530px; width:1620px; height:2px; z-index:3; background:#262C36;"></div>
+
+    <!-- Petak -->
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:160px; top:520px; width:22px; height:22px; z-index:5; background:#E30613; border-radius:50%;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:400px; width:340px; height:120px; z-index:10; color:#FFFFFF; text-align:center;">
+      <div class="mono" style="font-size:13px; color:#FFD400;">PETAK</div>
+      <div class="cond" style="font-size:44px; font-weight:800; line-height:1; margin-top:6px;">SLOBODNI<br>TRENINZI
+      </div>
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:580px; width:340px; height:200px; z-index:10; color:#8B949E; font-size:17px; line-height:1.5; text-align:center; padding:0 20px;">
+      Vozači testiraju setup, podešavanja geometrije i ponašanje različitih komponenti guma.
+    </div>
+
+    <!-- Subota -->
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:600px; top:520px; width:22px; height:22px; z-index:5; background:#E30613; border-radius:50%;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:480px; top:400px; width:340px; height:120px; z-index:10; color:#FFFFFF; text-align:center;">
+      <div class="mono" style="font-size:13px; color:#FFD400;">SUBOTA</div>
+      <div class="cond" style="font-size:44px; font-weight:800; line-height:1; margin-top:6px;">KVALIFIKACIJE<br>+
+        SPRINT</div>
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:480px; top:580px; width:340px; height:200px; z-index:10; color:#8B949E; font-size:17px; line-height:1.5; text-align:center; padding:0 20px;">
+      Borba za startne pozicije (Grid). Kratka sprint trka popodne donosi rane indikatore performansi.
+    </div>
+
+    <!-- Nedelja -->
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:1040px; top:520px; width:22px; height:22px; z-index:5; background:#E30613; border-radius:50%;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:920px; top:400px; width:340px; height:120px; z-index:10; color:#FFFFFF; text-align:center;">
+      <div class="mono" style="font-size:13px; color:#FFD400;">NEDELJA</div>
+      <div class="cond" style="font-size:44px; font-weight:800; line-height:1; margin-top:6px;">GLAVNA<br>TRKA</div>
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:920px; top:580px; width:340px; height:200px; z-index:10; color:#8B949E; font-size:17px; line-height:1.5; text-align:center; padding:0 20px;">
+      Puna distanca trke (~25 krugova). Maksimalan napor pod opterećenjem stvara metu za naš model.
+    </div>
+
+    <!-- Posle trke -->
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:1480px; top:520px; width:22px; height:22px; z-index:5; background:#58A6FF; border-radius:50%;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:1360px; top:400px; width:400px; height:120px; z-index:10; color:#FFFFFF; text-align:center;">
+      <div class="mono" style="font-size:13px; color:#58A6FF;">POSLE TRKE</div>
+      <div class="cond" style="font-size:44px; font-weight:800; line-height:1; margin-top:6px;">REZULTAT<br>→ DATASET
+      </div>
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:1360px; top:580px; width:400px; height:200px; z-index:10; color:#8B949E; font-size:17px; line-height:1.5; text-align:center; padding:0 20px;">
+      Ishodi se beleže zvanično i postaju istorijski zapisi za treniranje i evaluaciju modela.
+    </div>
+
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:0; top:880px; width:1920px; height:200px; z-index:1; background:#161B22;"></div>
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:120px; top:920px; width:6px; height:120px; z-index:5; background:#E30613;"></div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:160px; top:920px; width:1200px; height:60px; z-index:10; color:#FFFFFF;"
+      class="cond">
+      <span style="font-size:38px; font-weight:800;">Zašto je ovo važno?</span>
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:160px; top:970px; width:1660px; height:80px; z-index:10; color:#E6EDF3; font-size:22px; line-height:1.4;">
+      Naš model simulira predikciju <b>pre starta glavne trke u nedelju</b> — koristi isključivo podatke poznate unapred
+      (stazu, tim, vozača, istoriju).
+    </div>
+  </div>
+
+  <!-- 05 DNF -->
+  <div class="slide-container" data-screen-label="05 DNF">
+    <div data-object="true" data-object-type="image"
+      style="position:absolute; left:0; top:0; width:860px; height:1080px; z-index:1;">
+      <img src="../assets/crash-sachsenring.jpg"
+        style="width:100%; height:100%; object-fit:cover; object-position:center;">
+    </div>
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:0; top:0; width:860px; height:1080px; z-index:2; background:linear-gradient(180deg, rgba(10,10,12,0.55) 0%, rgba(10,10,12,0.35) 40%, rgba(10,10,12,0.80) 100%);">
+    </div>
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:60px; top:820px; width:280px; height:180px; z-index:6; background:#E30613;"></div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:60px; top:830px; width:280px; height:170px; z-index:10; color:#FFFFFF; text-align:center;">
+      <div class="cond" style="font-size:140px; font-weight:900; line-height:1;">DNF</div>
+      <div class="mono" style="font-size:14px; margin-top:-6px;">DID NOT FINISH</div>
+    </div>
+
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:920px; top:80px; width:600px; height:36px; z-index:10; color:#E30613;"
+      class="mono">05 · KLJUČNI POJAM</div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:920px; top:130px; width:960px; height:240px; z-index:10; color:#FFFFFF;"
+      class="cond">
+      <span style="font-size:120px; font-weight:900; line-height:0.95;">Šta je<br>DNF?</span>
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:920px; top:370px; width:940px; height:140px; z-index:10; color:#E6EDF3; font-size:24px; line-height:1.45;">
+      <b>DNF (Did Not Finish)</b> označava vozača koji <b>nije završio</b> trku. U MotoGP šampionatu, u proseku
+      <b>15–25%</b> startera po trci ne stigne do karirane zastave.
+    </div>
+
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:920px; top:550px; width:400px; height:40px; z-index:10; color:#8B949E;"
+      class="mono">TIPIČNI UZROCI</div>
+
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:920px; top:600px; width:300px; height:180px; z-index:5; background:#161B22; border-top:3px solid #E30613;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:940px; top:620px; width:260px; height:160px; z-index:10; color:#FFFFFF;">
+      <div class="cond" style="font-size:56px; font-weight:900; line-height:1; color:#E30613;">01</div>
+      <div class="cond" style="font-size:26px; font-weight:800; margin-top:6px;">PAD / INCIDENT</div>
+    </div>
+
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:1240px; top:600px; width:300px; height:180px; z-index:5; background:#161B22; border-top:3px solid #E30613;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:1260px; top:620px; width:260px; height:160px; z-index:10; color:#FFFFFF;">
+      <div class="cond" style="font-size:56px; font-weight:900; line-height:1; color:#E30613;">02</div>
+      <div class="cond" style="font-size:26px; font-weight:800; margin-top:6px;">TEHNIČKI KVAR</div>
+    </div>
+
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:1560px; top:600px; width:300px; height:180px; z-index:5; background:#161B22; border-top:3px solid #E30613;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:1580px; top:620px; width:260px; height:160px; z-index:10; color:#FFFFFF;">
+      <div class="cond" style="font-size:56px; font-weight:900; line-height:1; color:#E30613;">03</div>
+      <div class="cond" style="font-size:26px; font-weight:800; margin-top:6px;">DISKVALIFIKACIJA</div>
+    </div>
+
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:920px; top:840px; width:940px; height:160px; z-index:5; background:rgba(255,212,0,0.06); border-left:4px solid #FFD400;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:950px; top:860px; width:900px; height:140px; z-index:10; color:#FFFFFF;">
+      <div class="mono" style="font-size:13px; color:#FFD400; margin-bottom:4px;">ZAŠTO JE OVO ZANIMLJIVO ZA ML</div>
+      <div style="font-size:22px; line-height:1.4;">DNF predstavlja potpuno diskretan događaj — idealan izbor za binarni
+        klasifikacioni cilj.</div>
+    </div>
+  </div>
+
+  <!-- 06 ZAŠTO JE PROBLEM TEŽAK -->
+  <div class="slide-container" data-screen-label="06 Zasto je tezak">
+    <div data-object="true" data-object-type="image"
+      style="position:absolute; left:0; top:0; width:1920px; height:1080px; z-index:1;">
+      <img src="../assets/bagnaia-crash.jpg" style="width:100%; height:100%; object-fit:cover; object-position:center;">
+    </div>
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:0; top:0; width:1920px; height:1080px; z-index:2; background:linear-gradient(135deg, rgba(10,10,12,0.95) 0%, rgba(10,10,12,0.85) 55%, rgba(10,10,12,0.75) 100%);">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:80px; width:600px; height:36px; z-index:10; color:#E30613;"
+      class="mono">06 · MOTIVACIJA</div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:130px; width:1600px; height:150px; z-index:10; color:#FFFFFF;"
+      class="cond">
+      <span style="font-size:100px; font-weight:900; line-height:0.95;">Zašto je predviđanje <span
+          style="color:#E30613;">težak izazov?</span></span>
+    </div>
+
+    <!-- Blok 1 -->
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:120px; top:360px; width:520px; height:450px; z-index:5; background:#161B22; border-top:4px solid #E30613; padding:40px;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:160px; top:400px; width:440px; height:370px; z-index:10; color:#FFFFFF;">
+      <div class="cond" style="font-size:36px; font-weight:800; color:#E30613;">STOHASTIČKA PRIRODA</div>
+      <p style="font-size:18px; color:#8B949E; margin-top:20px; line-height:1.6;">Padovi se često dešavaju zbog
+        minimalnih grešaka od nekoliko milimetara u liniji kretanja ili naleta vetra, što je nemoguće deterministički
+        predvideti.</p>
+    </div>
+
+    <!-- Blok 2 -->
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:700px; top:360px; width:520px; height:450px; z-index:5; background:#161B22; border-top:4px solid #E30613; padding:40px;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:740px; top:400px; width:440px; height:370px; z-index:10; color:#FFFFFF;">
+      <div class="cond" style="font-size:36px; font-weight:800; color:#E30613;">DINAMIČKI USLOVI</div>
+      <p style="font-size:18px; color:#8B949E; margin-top:20px; line-height:1.6;">Nagle promene temperature staze ili
+        neočekivani pljusak potpuno menjaju nivo prianjanja u roku od nekoliko minuta.</p>
+    </div>
+
+    <!-- Blok 3 -->
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:1280px; top:360px; width:520px; height:450px; z-index:5; background:#161B22; border-top:4px solid #E30613; padding:40px;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:1320px; top:400px; width:440px; height:370px; z-index:10; color:#FFFFFF;">
+      <div class="cond" style="font-size:36px; font-weight:800; color:#E30613;">SKRIVENI ATRIBUTI</div>
+      <p style="font-size:18px; color:#8B949E; margin-top:20px; line-height:1.6;">Psihološki pritisak na vozača, tajne
+        nadogradnje paketa motocikla i mikro-oštećenja delova nisu zabeleženi u standardnim tabelama.</p>
+    </div>
+
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:120px; top:880px; width:1680px; height:100px; z-index:5; background:rgba(88,166,255,0.08); border-left:4px solid #58A6FF;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:160px; top:915px; width:1600px; height:50px; z-index:10; color:#FFFFFF; font-size:22px;">
+      <b>Cilj projekta:</b> Pomoću istorijskih obrazaca izvući statističku verovatnoću i maksimizovati prediktivnu moć.
+    </div>
+  </div>
+
+  <!-- 07 PRELAZNI SLAJD -->
+  <div class="slide-container" data-screen-label="07 Deo II Prelaz" style="background:#E30613;">
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:160px; top:300px; width:1600px; color:#FFFFFF;" class="mono">DEO II</div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:160px; top:380px; width:1600px; color:#FFFFFF;" class="cond">
+      <span style="font-size:140px; font-weight:900; line-height:0.9;">Mašinsko Učenje<br>u Srcu Telemetrije</span>
+    </div>
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:160px; top:620px; width:300px; height:4px; background:#FFFFFF;"></div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:160px; top:670px; width:1200px; color:#FFFFFF; font-size:32px; opacity:0.9;">
+      Formulacija problema, struktura skupa podataka, algoritam i arhitektura modela.
+    </div>
+  </div>
+
+  <!-- 08 BINARNA KLASIFIKACIJA -->
+  <div class="slide-container" data-screen-label="08 Binarna Klasifikacija">
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:80px; width:600px; height:36px; z-index:10; color:#E30613;"
+      class="mono">08 · FORMULACIJA PROBLEMA</div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:130px; width:1600px; height:120px; z-index:10; color:#FFFFFF;"
+      class="cond">
+      <span style="font-size:90px; font-weight:900;">Formulacija kao <span style="color:#E30613;">Binarna
+          Klasifikacija</span></span>
+    </div>
+
+    <!-- Klasa 0 -->
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:120px; top:320px; width:780px; height:420px; z-index:5; background:#161B22; border-top:4px solid #3FB950;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:160px; top:360px; width:700px; z-index:10; color:#FFFFFF;">
+      <div class="mono" style="color:#3FB950; font-size:18px; font-weight:bold;">KLASA 0</div>
+      <div class="cond" style="font-size:64px; font-weight:900; margin-top:10px;">FINISH (ZAVRŠIO)</div>
+      <p style="font-size:20px; color:#8B949E; margin-top:20px; line-height:1.6;">Vozač uspešno prolazi kroz ciljnu
+        liniju i biva zvanično plasiran u finalnom poretku trke.</p>
+    </div>
+
+    <!-- Klasa 1 -->
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:1020px; top:320px; width:780px; height:420px; z-index:5; background:#161B22; border-top:4px solid #E30613;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:1060px; top:360px; width:700px; z-index:10; color:#FFFFFF;">
+      <div class="mono" style="color:#E30613; font-size:18px; font-weight:bold;">KLASA 1</div>
+      <div class="cond" style="font-size:64px; font-weight:900; margin-top:10px;">DNF (ODUSTAO)</div>
+      <p style="font-size:20px; color:#8B949E; margin-top:20px; line-height:1.6;">Vozač odustaje usled udesa, tehničkog
+        kvara ili bilo kog drugog nepredviđenog faktora.</p>
+    </div>
+
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:120px; top:800px; width:1680px; height:180px; z-index:5; background:#010409; border:1px solid #21262D; border-radius:6px;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:160px; top:840px; width:1600px; z-index:10; color:#FFD400; font-family:'JetBrains Mono', monospace; font-size:28px; text-align:center;">
+      f(Staza, Vozač, Tim, Istorija, Pozicija) → Y ∈ {0, 1}
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:160px; top:900px; width:1600px; z-index:10; color:#8B949E; font-size:18px; text-align:center;">
+      Model mapira ulazni vektor karakteristika u verovatnoću pripadnosti klasi DNF.
+    </div>
+  </div>
+
+  <!-- 09 IZVOR PODATAKA -->
+  <div class="slide-container" data-screen-label="09 Izvor Podataka">
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:80px; width:600px; height:36px; z-index:10; color:#E30613;"
+      class="mono">09 · PODACI I DATASET</div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:130px; width:1600px; height:120px; z-index:10; color:#FFFFFF;"
+      class="cond">
+      <span style="font-size:90px; font-weight:900;">Struktura i <span style="color:#E30613;">Izvor
+          Podataka</span></span>
+    </div>
+
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:120px; top:300px; width:1000px; height:680px; z-index:5; background:#161B22; border-radius:4px; padding:40px;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:160px; top:340px; width:920px; height:600px; z-index:10; color:#FFFFFF;">
+      <div class="cond" style="font-size:36px; font-weight:800; color:#FFD400; margin-bottom:30px;">KAGGLE MOTOGP
+        DATASET (2002 - 2023)</div>
+      <p style="font-size:22px; line-height:1.6; color:#E6EDF3;">
+        Skup podataka sadrži istorijske zapise svih zvaničnih sesija modernog MotoGP šampionata u protekle dve
+        decenije.<br><br>
+        ● <b>Preko 15,000 pojedinačnih unosa</b> (vozač-trka instanci).<br>
+        ● Pokriva evoluciju motora od 990cc, preko 800cc do današnjih 1000cc zveri.<br>
+        ● Sadrži podatke o performansama sa preko 30 kultnih svetskih staza.
+      </p>
+    </div>
+
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:1180px; top:300px; width:620px; height:310px; z-index:5; background:#161B22; border-left:4px solid #E30613;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:1220px; top:330px; width:540px; z-index:10; color:#FFFFFF;">
+      <div class="cond" style="font-size:80px; font-weight:900; line-height:1;">20+</div>
+      <div class="mono" style="font-size:14px; color:#8B949E; margin-top:5px;">Godina istorijskih podataka</div>
+    </div>
+
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:1180px; top:670px; width:620px; height:310px; z-index:5; background:#161B22; border-left:4px solid #58A6FF;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:1220px; top:700px; width:540px; z-index:10; color:#FFFFFF;">
+      <div class="cond" style="font-size:80px; font-weight:900; line-height:1;">15k+</div>
+      <div class="mono" style="font-size:14px; color:#8B949E; margin-top:5px;">Redova u strukturi tabele</div>
+    </div>
+  </div>
+
+  <!-- 10 ATRIBUTI MODELA -->
+  <div class="slide-container" data-screen-label="10 Atributi Modela">
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:80px; width:600px; height:36px; z-index:10; color:#E30613;"
+      class="mono">10 · KARAKTERISTIKE</div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:130px; width:1600px; height:120px; z-index:10; color:#FFFFFF;"
+      class="cond">
+      <span style="font-size:90px; font-weight:900;">Pregled Ključnih <span
+          style="color:#E30613;">Atributa</span></span>
+    </div>
+
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:120px; top:280px; width:1680px; height:680px; z-index:5; background:#161B22; border:1px solid #21262D;">
+    </div>
+
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:280px; width:1680px; z-index:10;">
+      <table style="width:100%; border-collapse:collapse; color:#E6EDF3; font-size:20px;">
+        <thead>
+          <tr
+            style="background:#21262D; height:80px; text-align:left; font-family:'JetBrains Mono'; font-size:16px; color:#8B949E;">
+            <th style="padding-left:40px;">NAZIV ATRIBUTA</th>
+            <th>TIP PODATKA</th>
+            <th>ZNAČENJE U SPORTU</th>
+            <th style="padding-right:40px;">ULOGA U MODELU</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="height:90px; border-bottom:1px solid #30363D;">
+            <td style="padding-left:40px; font-family:'JetBrains Mono'; color:#FFD400;">circuit_name</td>
+            <td>Kategorički</td>
+            <td>Naziv trkačke staze</td>
+            <td>Identifikuje specifične mikro-karakteristike asfalta</td>
+          </tr>
+          <tr style="height:90px; border-bottom:1px solid #30363D;">
+            <td style="padding-left:40px; font-family:'JetBrains Mono'; color:#FFD400;">rider_name</td>
+            <td>Kategorički</td>
+            <td>Ime i prezime vozača</td>
+            <td>Uči agresivnost i individualni stil vožnje</td>
+          </tr>
+          <tr style="height:90px; border-bottom:1px solid #30363D;">
+            <td style="padding-left:40px; font-family:'JetBrains Mono'; color:#FFD400;">constructor_name</td>
+            <td>Kategorički</td>
+            <td>Fabrika / Proizvođač motocikla</td>
+            <td>Uzima u obzir nivo pouzdanosti mašine</td>
+          </tr>
+          <tr style="height:90px; border-bottom:1px solid #30363D;">
+            <td style="padding-left:40px; font-family:'JetBrains Mono'; color:#FFD400;">grid_position</td>
+            <td>Numerički</td>
+            <td>Startna pozicija obezbeđena u subotu</td>
+            <td>Korelira sa rizikom od incidenta u prvoj krivini</td>
+          </tr>
+          <tr style="height:90px; background:rgba(227,6,19,0.06);">
+            <td style="padding-left:40px; font-family:'JetBrains Mono'; color:#E30613; font-weight:bold;">status
+              (Target)</td>
+            <td style="font-weight:bold;">Binarni (0 / 1)</td>
+            <td style="font-weight:bold;">Konačni ishod trke</td>
+            <td style="font-weight:bold; padding-right:40px;">Ciljna varijabla (Finish=0, DNF=1)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 11 FEATURE ENGINEERING -->
+  <div class="slide-container" data-screen-label="11 Feature Engineering">
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:80px; width:600px; height:36px; z-index:10; color:#E30613;"
+      class="mono">11 · INŽENJERING ODREDBICA</div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:130px; width:1600px; height:120px; z-index:10; color:#FFFFFF;"
+      class="cond">
+      <span style="font-size:90px; font-weight:900;">Feature Engineering: <span style="color:#E30613;">Kreiranje
+          Vrednosti</span></span>
+    </div>
+
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:120px; top:300px; width:1680px; height:320px; z-index:5; background:#161B22; border-left:8px solid #3FB950; padding:40px;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:160px; top:340px; width:1600px; z-index:10; color:#FFFFFF;">
+      <div class="cond" style="font-size:38px; font-weight:800; color:#3FB950;">ISTORIJSKI PROSEC ODDUSTAJANJA (Rider
+        DNF Rate)</div>
+      <p style="font-size:22px; color:#E6EDF3; margin-top:20px; line-height:1.6;">
+        Sirovi podaci ne sadrže eksplicitnu sklonost vozača padovima. Kreiramo dinamički agregiran atribut koji računa
+        procenat trka koje vozač nije završio do tog trenutka u karijeri.
+      </p>
+      <div
+        style="background:#010409; padding:20px; border-radius:4px; font-family:'JetBrains Mono'; font-size:24px; color:#3FB950; margin-top:25px; display:inline-block;">
+        Rider_DNF_Rate = Total_DNFs / Total_Race_Starts
+      </div>
+    </div>
+
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:120px; top:660px; width:1680px; height:280px; z-index:5; background:#161B22; border-left:8px solid #FFD400; padding:40px;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:160px; top:700px; width:1600px; z-index:10; color:#FFFFFF;">
+      <div class="cond" style="font-size:38px; font-weight:800; color:#FFD400;">KODIRANJE KATEGORIČKIH PROMENLJIVIH
+      </div>
+      <p style="font-size:22px; color:#E6EDF3; margin-top:15px; line-height:1.6;">
+        Imena staza i vozača transformišemo kroz <b>Target Encoding</b> ili napredni <b>One-Hot Encoding</b> kako bi
+        algoritmi mogli matematički da procesiraju tekstualne kategorije.
+      </p>
+    </div>
+  </div>
+
+  <!-- 12 ML PIPELINE -->
+  <div class="slide-container" data-screen-label="12 ML Pipeline">
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:80px; width:600px; height:36px; z-index:10; color:#E30613;"
+      class="mono">12 · ARHITEKTURA SISTEMA</div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:130px; width:1600px; height:120px; z-index:10; color:#FFFFFF;"
+      class="cond">
+      <span style="font-size:90px; font-weight:900;">Pregled <span style="color:#E30613;">ML Pipeline-a</span></span>
+    </div>
+
+    <!-- Korak 1 -->
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:120px; top:360px; width:380px; height:400px; z-index:5; background:#161B22; border-radius:4px; border-bottom:4px solid #E30613;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:150px; top:400px; width:320px; z-index:10; color:#FFFFFF;">
+      <div class="mono" style="color:#8B949E; font-size:14px;">FAZA 01</div>
+      <div class="cond" style="font-size:32px; font-weight:800; margin-top:10px;">PRE-PROCESIRANJE</div>
+      <p style="font-size:16px; color:#8B949E; margin-top:15px; line-height:1.5;">Čišćenje nedostajućih vrednosti,
+        uklanjanje tekstualnih anomalija i normalizacija numeričkih kolona.</p>
+    </div>
+
+    <!-- Korak 2 -->
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:550px; top:360px; width:380px; height:400px; z-index:5; background:#161B22; border-radius:4px; border-bottom:4px solid #E30613;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:580px; top:400px; width:320px; z-index:10; color:#FFFFFF;">
+      <div class="mono" style="color:#8B949E; font-size:14px;">FAZA 02</div>
+      <div class="cond" style="font-size:32px; font-weight:800; margin-top:10px;">PODELA PODATAKA</div>
+      <p style="font-size:16px; color:#8B949E; margin-top:15px; line-height:1.5;">Podela skupa podataka na <b>Train /
+          Test</b> delove (npr. 80:20) kako bi se osigurala realna evaluacija modela.</p>
+    </div>
+
+    <!-- Korak 3 -->
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:980px; top:360px; width:380px; height:400px; z-index:5; background:#161B22; border-radius:4px; border-bottom:4px solid #E30613;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:1010px; top:400px; width:320px; z-index:10; color:#FFFFFF;">
+      <div class="mono" style="color:#8B949E; font-size:14px;">FAZA 03</div>
+      <div class="cond" style="font-size:32px; font-weight:800; margin-top:10px;">BALANSIRANJE</div>
+      <p style="font-size:16px; color:#8B949E; margin-top:15px; line-height:1.5;">Primena tehnika kao što je SMOTE ili
+        prilagođavanje težina klasa zbog neuravnoteženosti meta kolone.</p>
+    </div>
+
+    <!-- Korak 4 -->
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:1410px; top:360px; width:380px; height:400px; z-index:5; background:#161B22; border-radius:4px; border-bottom:4px solid #E30613;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:1440px; top:400px; width:320px; z-index:10; color:#FFFFFF;">
+      <div class="mono" style="color:#8B949E; font-size:14px;">FAZA 04</div>
+      <div class="cond" style="font-size:32px; font-weight:800; margin-top:10px;">TRENING I TUNING</div>
+    </div>
+
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:120px; top:820px; width:1680px; height:120px; z-index:5; background:rgba(88,166,255,0.06); border:1px dashed #58A6FF; border-radius:4px;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:150px; top:850px; width:1620px; z-index:10; color:#E6EDF3; font-size:22px; text-align:center;">
+      Proces je u potpunosti **automatizovan i ponovljiv** pomoću `scikit-learn` biblioteke unutar Python koda.
+    </div>
+  </div>
+
+  <!-- 13 ALGORITMI -->
+  <div class="slide-container" data-screen-label="13 Algoritmi">
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:80px; width:600px; height:36px; z-index:10; color:#E30613;"
+      class="mono">13 · IZBOR MODELA</div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:130px; width:1600px; height:120px; z-index:10; color:#FFFFFF;"
+      class="cond">
+      <span style="font-size:90px; font-weight:900;">Kandidati za <span style="color:#E30613;">Algoritme</span></span>
+    </div>
+
+    <!-- Mod 1 -->
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:120px; top:300px; width:520px; height:600px; z-index:5; background:#161B22; padding:40px; border-top:4px solid #FFD400;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:160px; top:340px; width:440px; z-index:10; color:#FFFFFF;">
+      <div class="cond" style="font-size:36px; font-weight:800; color:#FFD400;">Logistička Regresija</div>
+      <p style="font-size:18px; color:#8B949E; margin-top:20px; line-height:1.6;">
+        Služi nam kao stabilna osnova (**Baseline**). Pruža visoku interpretabilnost težina koeficijenata za svaki
+        parametar staze ili vozača.
+      </p>
+    </div>
+
+    <!-- Mod 2 -->
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:700px; top:300px; width:520px; height:600px; z-index:5; background:#161B22; padding:40px; border-top:4px solid #58A6FF;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:740px; top:340px; width:440px; z-index:10; color:#FFFFFF;">
+      <div class="cond" style="font-size:36px; font-weight:800; color:#58A6FF;">Random Forest</div>
+      <p style="font-size:18px; color:#8B949E; margin-top:20px; line-height:1.6;">
+        Ansambl stabala odluke uspešno hvata nelinearne interakcije izmedju atributa (npr. određeni vozač je brz
+        isključivo na stazama sa dugim pravcima).
+      </p>
+    </div>
+
+    <!-- Mod 3 -->
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:1280px; top:300px; width:520px; height:600px; z-index:5; background:#161B22; padding:40px; border-top:4px solid #3FB950;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:1320px; top:340px; width:440px; z-index:10; color:#FFFFFF;">
+      <div class="cond" style="font-size:36px; font-weight:800; color:#3FB950;">XGBoost / LightGBM</div>
+      <p style="font-size:18px; color:#8B949E; margin-top:20px; line-height:1.6;">
+        Algoritmi zasnovani na gradijentnom bustomu (Gradient Boosting). Očekuje se da ostvare maksimalnu preciznost u
+        prepoznavanju kompleksnih obrazaca udesa.
+      </p>
+    </div>
+  </div>
+
+  <!-- 14 DISBALANS KLASA -->
+  <div class="slide-container" data-screen-label="14 Disbalans Klasa">
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:80px; width:600px; height:36px; z-index:10; color:#E30613;"
+      class="mono">14 · PROFIL META VARIJABLE</div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:130px; width:1600px; height:120px; z-index:10; color:#FFFFFF;"
+      class="cond">
+      <span style="font-size:90px; font-weight:900;">Izazov: <span style="color:#E30613;">Disbalans Klasa</span></span>
+    </div>
+
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:120px; top:340px; width:1200px; height:80px; z-index:5; background:#3FB950; border-radius:4px 0 0 4px;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:150px; top:360px; width:400px; z-index:10; color:#FFFFFF;"><span
+        style="font-family:'Barlow Condensed'; font-size:32px; font-weight:900;">FINISH (VEĆINSKA KLASA) — 78%</span>
+    </div>
+
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:1320px; top:340px; width:480px; height:80px; z-index:5; background:#E30613; border-radius:0 4px 4px 0;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:1350px; top:360px; width:400px; z-index:10; color:#FFFFFF;"><span
+        style="font-family:'Barlow Condensed'; font-size:32px; font-weight:900;">DNF — 22%</span></div>
+
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:120px; top:500px; width:1680px; height:440px; z-index:5; background:#161B22; border-radius:4px; padding:40px;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:160px; top:540px; width:1600px; z-index:10; color:#FFFFFF;">
+      <div class="cond" style="font-size:36px; font-weight:800; color:#FFD400;">Paradoks Tačnosti (Accuracy Paradox)
+      </div>
+      <p style="font-size:22px; color:#E6EDF3; margin-top:20px; line-height:1.6;">
+        Ukoliko model slepo i bez učenja predvidi da će svaki vozač bezbedno završiti trku, ostvariće prividno visoku
+        tačnost (Accuracy) od **78%**.<br><br>
+        Međutim, takav model bi bio potpuno neupotrebljiv jer ima nultu moć detekcije kritičnih DNF događaja. Zato
+        klasičnu tačnost odbacujemo kao primarnu metriku uspeha.
+      </p>
+    </div>
+  </div>
+
+  <!-- 15 METRIKE EVALUACIJE -->
+  <div class="slide-container" data-screen-label="15 Metrike Evaluacije">
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:80px; width:600px; height:36px; z-index:10; color:#E30613;"
+      class="mono">15 · METRIKE USPEHA</div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:130px; width:1600px; height:120px; z-index:10; color:#FFFFFF;"
+      class="cond">
+      <span style="font-size:90px; font-weight:900;">Prave Metrike za <span
+          style="color:#E30613;">Evaluaciju</span></span>
+    </div>
+
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:120px; top:320px; width:520px; height:500px; z-index:5; background:#161B22; border-bottom:4px solid #58A6FF;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:160px; top:360px; width:440px; z-index:10; color:#FFFFFF;">
+      <div class="cond" style="font-size:38px; font-weight:800; color:#58A6FF;">PRECISION</div>
+      <p style="font-size:18px; color:#8B949E; margin-top:20px; line-height:1.6;">Od svih slučajeva koje je model
+        označio kao odustajanje (DNF), koliko njih je u stvarnosti zaista palo?</p>
+    </div>
+
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:700px; top:320px; width:520px; height:500px; z-index:5; background:#161B22; border-bottom:4px solid #58A6FF;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:740px; top:360px; width:440px; z-index:10; color:#FFFFFF;">
+      <div class="cond" style="font-size:38px; font-weight:800; color:#58A6FF;">RECALL (OSETLJIVOST)</div>
+      <p style="font-size:18px; color:#8B949E; margin-top:20px; line-height:1.6;">Od ukupnog broja stvarnih odustajanja
+        na stazi, koliki procenat je model uspešno detektovao?</p>
+    </div>
+
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:1280px; top:320px; width:520px; height:500px; z-index:5; background:#161B22; border-bottom:4px solid #3FB950;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:1320px; top:360px; width:440px; z-index:10; color:#FFFFFF;">
+      <div class="cond" style="font-size:38px; font-weight:800; color:#3FB950;">F1-SCORE</div>
+      <p style="font-size:18px; color:#8B949E; margin-top:20px; line-height:1.6;">Harmonijska sredina preciznosti i
+        odziva. Naša <b>glavna metrika</b> koja daje realnu ocenu balansiranog kvaliteta modela.</p>
+    </div>
+
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:120px; top:860px; width:1680px; height:120px; z-index:5; background:#010409; border:1px solid #21262D; border-radius:4px;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:160px; top:895px; width:1600px; z-index:10; color:#FFD400; font-size:22px; text-align:center;">
+      Takođe pratimo i **ROC-AUC vrednost** kako bismo ocenili stabilnost predikcija kroz različite pragove
+      klasifikacije.
+    </div>
+  </div>
+
+  <!-- 16 OČEKIVANI REZULTAT I KRAJ -->
+  <div class="slide-container" data-screen-label="16 Ocekivani Rezultat i Kraj">
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:0; top:0; width:1140px; height:1080px; z-index:1; background:#161B22; border-right:1px solid #30363D; padding:100px;">
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:120px; top:120px; width:900px; z-index:10; color:#FFFFFF;">
+      <div class="mono" style="color:#E30613; font-size:16px;">16 · KONAČNI IZLAZ</div>
+      <div class="cond"
+        style="font-size:100px; font-weight:900; line-height:0.95; margin-top:20px; text-transform:uppercase;">
+        Očekivani<br>Rezultat</div>
+      <div style="width:200px; height:4px; background:#E30613; margin-top:40px; margin-bottom:40px;"></div>
+      <p style="font-size:26px; line-height:1.6; color:#E6EDF3;">
+        Kompletan i stabilan <b>reproducibilan pipeline</b> — od učitavanja sirovih Kaggle podataka do visoko
+        interpretabilne binarne predikcije ishoda MotoGP trkačkog vikenda.<br><br>
+        Uvid u to koji faktori (staza ili istorija vozača) statistički najviše utiču na rizik od udesa.
+      </p>
+    </div>
+
+    <!-- Zavrsna slika desno -->
+    <div data-object="true" data-object-type="image"
+      style="position:absolute; left:1200px; top:0; width:720px; height:1080px; z-index:1;">
+      <img src="../assets/grid-pack.jpg" style="width:100%; height:100%; object-fit:cover; object-position:center;">
+    </div>
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:1200px; top:0; width:720px; height:1080px; z-index:2; background:linear-gradient(90deg, rgba(10,10,12,0.85) 0%, rgba(10,10,12,0.35) 45%, rgba(10,10,12,0.75) 100%);">
+    </div>
+
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:1280px; top:400px; width:560px; height:60px; z-index:10; color:#FFFFFF; font-family:'JetBrains Mono', monospace; font-size:15px; letter-spacing:0.24em; text-align:center;"
+      class="mono">
+      HVALA NA PAŽNJI
+    </div>
+    <div data-object="true" data-object-type="shape"
+      style="position:absolute; left:1500px; top:470px; width:120px; height:2px; z-index:5; background:#E30613;"></div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:1280px; top:500px; width:560px; height:200px; z-index:10; color:#FFFFFF; font-family:'Barlow Condensed', sans-serif; font-weight:900; font-size:110px; line-height:0.9; text-align:center; text-transform:uppercase;"
+      class="cond">
+      Pitanja?
+    </div>
+    <div data-object="true" data-object-type="textbox"
+      style="position:absolute; left:1280px; top:940px; width:560px; height:60px; z-index:10; color:#8B949E; font-family:'JetBrains Mono', monospace; font-size:14px; text-align:center;"
+      class="mono">
+      NIKOLA LUKIĆ · RA47/2023
+    </div>
+  </div>
+
+</body>
+
+</html>
